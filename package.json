@@ -8,33 +8,36 @@
     "build-types": "df-build-types ./",
     "check-types": "tsc",
     "lint": "eslint .",
-    "quality": "npm run lint && npm run build-types && npm run check-types && npm audit --omit=dev --audit-level=critical"
+    "prepare": "husky || true",
+    "test": "",
+    "quality": "npm run lint && npm run build-types && npm run check-types && npm run test && npm audit --omit=dev --audit-level=critical"
   },
   "files": [
-    "**/*.js",
-    "**/types/config/**"
+    "**/*.json",
+    "**/*.ts",
+    "**/types/config/.type/**"
   ],
   "imports": {
     "#types": "./types/index.ts"
   },
+  "keywords": [
+    "data-fair-catalogs-plugin"
+  ],
   "license": "MIT",
   "dependencies": {
     "@data-fair/lib-node": "^2.8.1",
-    "@data-fair/lib-utils": "^1.5.0",
+    "@data-fair/lib-utils": "^1.6.0",
     "jsonld": "^8.3.3",
-    "memoize": "^10.1.0",
-    "prom-client": "^15.1.3"
+    "memoize": "^10.1.0"
   },
   "devDependencies": {
-    "@commitlint/config-conventional": "^18.1.0",
-    "@data-fair/lib-common-types": "^1.8.4",
-    "@data-fair/lib-types-builder": "^1.7.0",
-    "eslint": "^9.17.0",
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "@data-fair/lib-common-types": "^1.9.2",
+    "@data-fair/lib-types-builder": "^1.8.0",
+    "eslint": "^9.25.1",
     "husky": "^9.1.7",
-    "neostandard": "^0.12.0",
-    "typescript": "^5.7.3"
-  },
-  "relativeDependencies": {
-    "@data-fair/lib-common-types": "../lib/packages/common-types"
+    "neostandard": "^0.12.1",
+    "typescript": "^5.8.3"
   }
 }

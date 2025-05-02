@@ -1,4 +1,4 @@
-import type { CatalogPlugin, CatalogMetadata, CatalogDataset } from '@data-fair/lib-common-types/catalog.js'
+import type { CatalogPlugin, CatalogMetadata, CatalogDataset } from '@data-fair/lib-common-types/catalog/index.js'
 
 import { schema as configSchema, assertValid as assertConfigValid, type DCATConfig } from './types/config/index.ts'
 import axios from '@data-fair/lib-node/axios.js'
