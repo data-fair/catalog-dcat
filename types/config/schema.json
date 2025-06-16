@@ -21,7 +21,7 @@
       },
       "pattern": "^https?://.*[^/]$",
       "examples": [
-        "https://opendata.staging-koumoul.com/data-fair/api/v1/catalog/dcat"
+        "https://opendata.koumoul.com/data-fair/api/v1/catalog/dcat"
       ]}
   }
 }
