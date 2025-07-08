@@ -1,5 +1,5 @@
 {
-  "$id": "https://github.com/data-fair/catalog-dcat/config",
+  "$id": "https://github.com/data-fair/catalog-dcat/catalog-config",
   "x-exports": [
     "types",
     "validate",

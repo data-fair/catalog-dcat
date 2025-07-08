@@ -1,73 +1,38 @@
-import type { CatalogPlugin, CatalogMetadata, CatalogDataset } from '@data-fair/lib-common-types/catalog/index.js'
+import type CatalogPlugin from '@data-fair/types-catalogs'
+import { importConfigSchema, configSchema, assertConfigValid, type DCATConfig } from '#types'
+import { type DCATCapabilities, capabilities } from './lib/capabilities.ts'
 
-import { schema as configSchema, assertValid as assertConfigValid, type DCATConfig } from './types/config/index.ts'
-import axios from '@data-fair/lib-node/axios.js'
-import { httpError } from '@data-fair/lib-utils/http-errors.js'
+// Since the plugin is very frequently imported, each function is imported on demand,
+// instead of loading the entire plugin.
+// This file should not contain any code, but only constants and dynamic imports of functions.
 
-// API Doc: https://data.economie.gouv.fr/api/explore/v2.1/console
+const plugin: CatalogPlugin<DCATConfig, DCATCapabilities> = {
+  async prepare (context) {
+    // DCAT catalog doesn't need any preparation
+    // This function is called when the catalog configuration is saved
+    // We could validate the DCAT URL here if needed
+    return {}
+  },
 
-const prepareDataset = (catalogConfig: DCATConfig, dataset: any): CatalogDataset => {
-  // Extract basic metadata
-  const id = dataset.id || dataset.identifier || ''
-  const title = dataset.title || ''
-  const description = dataset.description || ''
+  async list (context) {
+    const { list } = await import('./lib/imports.ts')
+    return list(context)
+  },
 
-  // Handle distributions/resources
-  const resources = Array.isArray(dataset.distribution)
-    ? dataset.distribution.map((dist: any) => ({
-      id: dist.id || dist.identifier || '',
-      title: dist.title || '',
-      format: dist.format || '',
-      url: dist.downloadURL || ''
-    }))
-    : []
+  async getResource (context) {
+    const { getResource } = await import('./lib/imports.ts')
+    return getResource(context)
+  },
 
-  // Handle keywords/tags
-  const keywords = Array.isArray(dataset.keyword)
-    ? dataset.keyword
-    : (typeof dataset.keyword === 'string' ? dataset.keyword.split(',').map((k: string) => k.trim()) : [])
+  metadata: {
+    title: 'Catalog DCAT',
+    description: 'Importez des jeux de données depuis un catalogue DCAT.',
+    capabilities
+  },
 
-  return {
-    id,
-    title,
-    description,
-    keywords,
-    resources,
-  }
-}
-
-const listDatasets = async (catalogConfig: DCATConfig) => {
-  let res
-  try {
-    res = (await axios.get(catalogConfig.url)).data
-  } catch (e) {
-    throw httpError(500, `Error fetching datasets from DCAT: ${e}`)
-  }
-  const datasets: CatalogDataset[] = res.dataset.map((dataset: any) => prepareDataset(catalogConfig, dataset))
-
-  return {
-    count: datasets.length,
-    results: datasets
-  }
-}
-
-const getDataset = async (catalogConfig: DCATConfig, datasetId: string) => {
-  return (await listDatasets(catalogConfig)).results.find(d => d.id === datasetId)
-}
-
-const capabilities = ['listDatasets' as const]
-
-const metadata: CatalogMetadata<typeof capabilities> = {
-  title: 'Catalog DCAT',
-  description: 'Importez des jeux de données depuis un catalogue DCAT.',
-  capabilities
-}
-
-const plugin: CatalogPlugin<DCATConfig, typeof capabilities> = {
-  listDatasets,
-  getDataset,
+  importConfigSchema,
   configSchema,
-  assertConfigValid,
-  metadata
+  assertConfigValid
 }
+
 export default plugin
