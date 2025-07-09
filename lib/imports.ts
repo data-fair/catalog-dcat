@@ -49,6 +49,7 @@ export const list = async ({ catalogConfig, params }: ListContext<DCATConfig, DC
     let distributions = dataset.distribution.map((dcatResource: any) => {
       // Generate unique ID by concatenating dataset ID, distribution ID and format
       const uniqueId = `${dataset.identifier}_${dcatResource.identifier}_${(dcatResource.format || 'unknown').replace(/[^a-zA-Z0-9]/g, '_')}`
+      const origin = catalogConfig.baseOrigin?.replace('{id}', dataset.identifier) || dataset.landingPage || catalogConfig.url
 
       return {
         id: uniqueId,
@@ -58,7 +59,7 @@ export const list = async ({ catalogConfig, params }: ListContext<DCATConfig, DC
         format: dcatResource.format || 'unknown',
         mimeType: dcatResource.mediaType,
         size: dcatResource.byteSize,
-        origin: dataset.landingPage || catalogConfig.url
+        origin
       } as ResourceList
     })
 
@@ -147,31 +148,66 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
 
   const response = await axios.get(downloadUrl, { responseType: 'stream' })
 
-  // Determine file extension from URL, format or Content-Type
+  // Determine file extension with priority: URL extension -> Content-Type -> DCAT format
   const urlPath = new URL(downloadUrl).pathname
-  let extension = path.extname(urlPath) || '.dat'
+  let extension = path.extname(urlPath)
 
-  if (!extension || extension === '.dat') {
-    // Try to use DCAT format
-    if (distribution.format) {
-      const format = distribution.format.toLowerCase()
-      if (format.includes('csv')) extension = '.csv'
-      else if (format.includes('json')) extension = '.json'
-      else if (format.includes('xml')) extension = '.xml'
-      else if (format.includes('excel') || format.includes('xlsx')) extension = '.xlsx'
-      else if (format.includes('zip')) extension = '.zip'
-      else if (format.includes('pdf')) extension = '.pdf'
+  // Supported formats mapping
+  const supportedExtensions = [
+    '.csv', '.tsv', '.ods', '.fods', '.xlsx', '.xls',
+    '.geojson', '.kml', '.kmz', '.gpx', '.ics', '.zip'
+  ]
+
+  // 1. Check if URL extension is already supported
+  if (extension && supportedExtensions.includes(extension.toLowerCase())) {
+    extension = extension.toLowerCase()
+  } else {
+    // 2. Try to determine from Content-Type
+    const contentType = response.headers['content-type']?.toLowerCase()
+    if (contentType) {
+      // Check for unsupported XML formats first
+      if (contentType.includes('xml')) {
+        throw new Error(`Unsupported XML format (content-type: ${contentType}).`)
+      }
+
+      if (contentType.includes('csv') || contentType.includes('comma-separated')) extension = '.csv'
+      else if (contentType.includes('tab-separated') || contentType.includes('tsv')) extension = '.tsv'
+      else if (contentType.includes('opendocument.spreadsheet')) extension = '.ods'
+      else if (contentType.includes('xlsx') || contentType.includes('openxmlformats-officedocument.spreadsheetml')) extension = '.xlsx'
+      else if (contentType.includes('excel') || contentType.includes('vnd.ms-excel')) extension = '.xls'
+      else if (contentType.includes('geojson') || contentType.includes('geo+json')) extension = '.geojson'
+      else if (contentType.includes('kml')) extension = '.kml'
+      else if (contentType.includes('kmz')) extension = '.kmz'
+      else if (contentType.includes('gpx')) extension = '.gpx'
+      else if (contentType.includes('calendar') || contentType.includes('ics')) extension = '.ics'
+      else if (contentType.includes('zip') || contentType.includes('application/zip')) extension = '.zip'
+      else extension = ''
+    } else {
+      extension = ''
     }
 
-    // Otherwise use Content-Type
-    if (extension === '.dat') {
-      const contentType = response.headers['content-type']
-      if (contentType?.includes('json')) extension = '.json'
-      else if (contentType?.includes('csv')) extension = '.csv'
-      else if (contentType?.includes('xml')) extension = '.xml'
-      else if (contentType?.includes('excel')) extension = '.xlsx'
-      else if (contentType?.includes('zip')) extension = '.zip'
-      else if (contentType?.includes('pdf')) extension = '.pdf'
+    // 3. If still no extension, try to determine from DCAT format
+    if (!extension && distribution.format) {
+      const format = distribution.format.toLowerCase()
+      if (format.includes('csv') || format === 'text/csv') extension = '.csv'
+      else if (format.includes('tsv') || format.includes('tab-separated')) extension = '.tsv'
+      else if (format.includes('opendocument') || format.includes('ods')) extension = '.ods'
+      else if (format.includes('xlsx') || format.includes('excel 2007')) extension = '.xlsx'
+      else if (format.includes('xls') || format.includes('excel')) extension = '.xls'
+      else if (format.includes('geojson')) extension = '.geojson'
+      else if (format.includes('kml')) extension = '.kml'
+      else if (format.includes('kmz')) extension = '.kmz'
+      else if (format.includes('gpx')) extension = '.gpx'
+      else if (format.includes('icalendar') || format.includes('ics')) extension = '.ics'
+      else if (format.includes('shapefile') || format.includes('shp') || format.includes('esri')) extension = '.zip'
+      else if (format.includes('zip')) extension = '.zip'
+    }
+
+    // 4. Throw error if format is not supported
+    if (!extension) {
+      const formatInfo = distribution.format ? ` (format: ${distribution.format})` : ''
+      const contentTypeInfo = contentType ? ` (content-type: ${contentType})` : ''
+      throw new Error(`Unsupported file format${formatInfo}${contentTypeInfo}.`)
     }
   }
 
@@ -183,7 +219,7 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
   const filePath = path.join(tmpDir, fileName)
 
   await log.info(`Downloading resource to ${fileName}`)
-  await log.warning('This task can take a while, please be patient')
+  await log.info('This task can take a while, please be patient')
 
   // Create write stream
   const writeStream = fs.createWriteStream(filePath)
@@ -198,7 +234,9 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
   await log.info(`Resource ${distribution.title} downloaded successfully !`)
 
   const title = importConfig.useDatasetTitle ? dataset.title : (distribution.title || dataset.title)
-  const description = importConfig.useDatasetDescription ? dataset.description : (distribution.description || dataset.description)
+  const description = importConfig.useDatasetDescription ? dataset.description : distribution.description
+  const origin = catalogConfig.baseOrigin?.replace('{id}', datasetId) || dataset.landingPage || catalogConfig.url
+
   // Build the Resource return object
   const resource: Resource = {
     id: resourceId,
@@ -207,7 +245,7 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
     filePath,
     format: distribution.format || 'unknown',
     mimeType: distribution.mediaType,
-    origin: dataset.landingPage || catalogConfig.url,
+    origin,
     size: distribution.byteSize,
     license: dataset.license
       ? {
@@ -217,7 +255,6 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
       : undefined,
     keywords: dataset.keyword
   }
-  console.log('Resource object created:', resource)
 
   return resource
 }

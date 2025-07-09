@@ -22,6 +22,18 @@
       "pattern": "^https?://.*[^/]$",
       "examples": [
         "https://opendata.koumoul.com/data-fair/api/v1/catalog/dcat"
-      ]}
+      ]
+    },
+    "baseOrigin": {
+      "title": "Template for origin URLs",
+      "x-i18n-title": {
+        "fr": "Template des URLs de provenance"
+      },
+      "description": "The template used to generate the origin URL. It can contain `{id}` which will be replaced by the remote dataset identifier. For example: `https://open.isogeo.com/s/.../.../r/{id}`",
+      "x-i18n-description": {
+        "fr": "Le template utilisé pour générer l'URL de provenance. Il peut contenir `{id}` qui sera remplacé par l'identifiant du jeu de données distant. Par exemple : https://open.isogeo.com/s/.../.../r/{id}"
+      },
+      "type": "string"
+    }
   }
 }
