@@ -237,8 +237,7 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
   const description = importConfig.useDatasetDescription ? dataset.description : distribution.description
   const origin = catalogConfig.baseOrigin?.replace('{id}', datasetId) || dataset.landingPage || catalogConfig.url
 
-  // Build the Resource return object
-  const resource: Resource = {
+  return {
     id: resourceId,
     title,
     description,
@@ -255,6 +254,4 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
       : undefined,
     keywords: dataset.keyword
   }
-
-  return resource
 }

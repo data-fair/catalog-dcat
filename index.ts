@@ -25,7 +25,7 @@ const plugin: CatalogPlugin<DCATConfig, DCATCapabilities> = {
   },
 
   metadata: {
-    title: 'Catalog DCAT',
+    title: 'DCAT',
     description: 'Importez des jeux de données depuis un catalogue DCAT.',
     capabilities
   },
