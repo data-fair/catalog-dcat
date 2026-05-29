@@ -140,7 +140,8 @@ describe('catalog-dcat', () => {
           useDatasetDescription: false
         },
         tmpDir,
-        log: logFunctions
+        log: logFunctions,
+        update: { metadata: true, schema: true }
       })
 
       assert.ok(resource, 'The resource should exist')
@@ -192,7 +193,8 @@ describe('catalog-dcat', () => {
           useDatasetDescription: true
         },
         tmpDir,
-        log: logFunctions
+        log: logFunctions,
+        update: { metadata: true, schema: true }
       })
 
       assert.ok(resource, 'The resource should exist')
@@ -218,7 +220,8 @@ describe('catalog-dcat', () => {
             resourceId,
             importConfig: {},
             tmpDir,
-            log: logFunctions
+            log: logFunctions,
+            update: { metadata: true, schema: true }
           })
         },
         /not found|does not exist/i,
@@ -237,7 +240,8 @@ describe('catalog-dcat', () => {
             resourceId,
             importConfig: {},
             tmpDir,
-            log: logFunctions
+            log: logFunctions,
+            update: { metadata: true, schema: true }
           })
         },
         /Invalid resource ID format/i,

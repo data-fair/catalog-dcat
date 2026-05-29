@@ -163,7 +163,7 @@ export const getResource = async ({ catalogConfig, resourceId, importConfig, tmp
     extension = extension.toLowerCase()
   } else {
     // 2. Try to determine from Content-Type
-    const contentType = response.headers['content-type']?.toLowerCase()
+    const contentType = (response.headers['content-type'] as string | undefined)?.toLowerCase()
     if (contentType) {
       // Check for unsupported XML formats first
       if (contentType.includes('xml')) {
